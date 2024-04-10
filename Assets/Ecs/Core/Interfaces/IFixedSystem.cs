@@ -4,6 +4,6 @@ namespace Ecs.Core.Interfaces
 {
     public interface IFixedSystem : ISystem
     {
-        void Fixed();
+        void FixedExecute();
     }
 }

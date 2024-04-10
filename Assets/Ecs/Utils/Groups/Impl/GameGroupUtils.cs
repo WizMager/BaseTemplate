@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using JCMG.EntitasRedux;
 using UnityEngine.Pool;
+using Utils.Extensions;
 
 namespace Ecs.Utils.Groups.Impl
 {
