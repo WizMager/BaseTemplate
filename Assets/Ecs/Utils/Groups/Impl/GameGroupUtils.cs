@@ -8,17 +8,17 @@ namespace Ecs.Utils.Groups.Impl
 {
     public class GameGroupUtils : IGameGroupUtils
     {
-         //private readonly IGroup<GameEntity> _obstacleGroup;
+         private readonly IGroup<GameEntity> _destroyedGroup;
 
         public GameGroupUtils(GameContext game)
         {
-            //_obstacleGroup = game.GetGroup(GameMatcher.AllOf(GameMatcher.Obstacle));
+            _destroyedGroup = game.GetGroup(GameMatcher.AllOf(GameMatcher.Destroyed));
         }
-
-        // public IDisposable GetObstacles(out List<GameEntity> buffer, Func<GameEntity, bool> filter = null)
-        // {
-        //     return GetEntities(out buffer, _obstacleGroup, e => e.HasObstacle && !e.IsDestroyed, filter);
-        // }
+        
+        public IDisposable GetDestroyed(out List<GameEntity> buffer, Func<GameEntity, bool> filter = null)
+        {
+            return GetEntities(out buffer, _destroyedGroup, e => e.IsDestroyed, filter);
+        }
         
         private IDisposable GetEntities(
             out List<GameEntity> buffer,  

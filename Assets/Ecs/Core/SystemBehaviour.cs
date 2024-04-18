@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Ecs.Core.Feature;
 using Ecs.Core.Interfaces;
@@ -10,7 +9,7 @@ using Zenject;
 
 namespace Ecs.Core
 {
-    public class Bootstrap : ITickable, ILateTickable, IFixedTickable, IDisposable
+    public class SystemBehaviour : ITickable, ILateTickable, IFixedTickable
     {
         private readonly ISystemInstaller<ISystem>[] _systems;
         private readonly IFeatureManager _featureManager;
@@ -18,18 +17,11 @@ namespace Ecs.Core
         private readonly List<ISystemInstaller<ISystem>> _initializableSystems = new();
         private readonly List<ISystemInstaller<ISystem>> _updateSystems = new();
         private readonly List<ISystemInstaller<ISystem>> _fixedSystems = new();
+        private readonly List<ISystemInstaller<ISystem>> _lateSystems = new();
         private readonly List<ISystemInstaller<ISystem>> _reactiveSystems = new();
         private readonly HashSet<ISystem> _deactivatedReactiveSystems = new();
         
-        private readonly Contexts _contexts;
-        //private readonly CustomFeature _feature;
-        // private readonly List<IStartable> _startables;
-        // private readonly List<IResetable> _resetables;
-        // private readonly List<ILateSystem> _late = new();
-        private bool _isInitialized;
-        private bool _isPaused;
-        
-        public Bootstrap(
+        public SystemBehaviour(
             IFeatureManager featureManager,
             ISystemInstaller[] systems
         )
@@ -37,70 +29,6 @@ namespace Ecs.Core
             _featureManager = featureManager;
 
             _systems = ProcessRawSystems(systems);
-        }
-
-        // public void Initialize()
-        // {
-        //     if (_isInitialized)
-        //         throw new Exception($"[{typeof(Bootstrap)}]: Bootstrap already is initialized");
-        //
-        //     if (_startables != null)
-        //         foreach (var pool in _startables)
-        //             pool.Start();
-        //     
-        //     _feature.Initialize();
-        //     _isInitialized = true;
-        // }
-
-        // public void Tick()
-        // {
-        //     if (_isPaused)
-        //         return;
-        //
-        //     _feature.Update();
-        // }
-
-        public void LateTick()
-        {
-            if (_isPaused)
-                return;
-        
-            // foreach (var lateSystem in _late)
-            //     lateSystem.Late();
-        
-            //_feature.Cleanup();
-        }
-        
-        public void Pause(bool isPaused)
-        {
-            _isPaused = isPaused;
-        }
-
-        public void Reset()
-        {
-            Pause(true);
-
-            //_feature.Deactivate();
-            foreach (var context in _contexts.AllContexts)
-            {
-                context.DestroyAllEntities();
-                context.ResetCreationIndex();
-            }
-
-            // foreach (var resetable in _resetables)
-            //     resetable.Reset();
-
-            //_feature.Activate();
-            _isInitialized = false;
-            Initialize();
-
-            Pause(false);
-        }
-        
-        public void Dispose()
-        {
-            //_feature.Deactivate();
-            _contexts.Reset();
         }
         
         public void Initialize()
@@ -142,12 +70,28 @@ namespace Ecs.Core
 
             Profiler.EndSample();
         }
+        
+        public void LateTick()
+        {
+            Profiler.BeginSample("Late update systems");
+
+            foreach (var systemInstaller in _lateSystems)
+            {
+                if (_featureManager.AnyEnable(systemInstaller.Features))
+                {
+                    Profiler.BeginSample(systemInstaller.Name);
+
+                    (systemInstaller.System as ILateSystem)?.Late();
+
+                    Profiler.EndSample();
+                }
+            }
+
+            Profiler.EndSample();
+        }
 
         public void FixedTick()
         {
-            if (_isPaused)
-                return;
-            
             Profiler.BeginSample("Fixed update systems");
 
             foreach (var systemInstaller in _fixedSystems)
@@ -214,6 +158,7 @@ namespace Ecs.Core
 
             _initializableSystems.Clear();
             _updateSystems.Clear();
+            _lateSystems.Clear();
             _fixedSystems.Clear();
             _reactiveSystems.Clear();
 
@@ -223,6 +168,8 @@ namespace Ecs.Core
                     _initializableSystems.Add(systemInstaller);
                 if (systemInstaller.System is IUpdateSystem)
                     _updateSystems.Add(systemInstaller);
+                if (systemInstaller.System is ILateSystem)
+                    _lateSystems.Add(systemInstaller);
                 if (systemInstaller.System is IFixedSystem)
                     _fixedSystems.Add(systemInstaller);
                 if (systemInstaller.System is IReactiveSystem)

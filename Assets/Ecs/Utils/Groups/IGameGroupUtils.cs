@@ -1,7 +1,10 @@
-﻿namespace Ecs.Utils.Groups
+﻿using System;
+using System.Collections.Generic;
+
+namespace Ecs.Utils.Groups
 {
     public interface IGameGroupUtils
     {
-        // IDisposable GetObstacles(out List<GameEntity> buffer, Func<GameEntity, bool> filter = null)
+        IDisposable GetDestroyed(out List<GameEntity> buffer, Func<GameEntity, bool> filter = null);
     }
 }

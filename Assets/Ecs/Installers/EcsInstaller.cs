@@ -1,19 +1,16 @@
-﻿using System;
-using Ecs.Core;
+﻿using Ecs.Core;
 using Ecs.Core.Feature.Impl;
+using Ecs.Installers.Generated;
 using Ecs.Utils.Groups.Impl;
-using JCMG.EntitasRedux;
 using UnityEngine.Rendering;
 using Zenject;
 
 namespace Ecs.Installers
 {
-    public class EcsInstaller : MonoInstaller, IDisposable
+    public class EcsInstaller : MonoInstaller
     {
         public override void InstallBindings()
         {
-            Container.Bind<IDisposable>().FromInstance(this).AsTransient();
-            
             Container.BindInterfacesAndSelfTo<FeatureManager>().AsSingle();
             
             Container.BindInterfacesTo<CommandBuffer>().AsSingle();
@@ -28,8 +25,7 @@ namespace Ecs.Installers
             
             BindCleanupSystems();
             
-            //Container.BindInstance(_contexts).WhenInjectedInto<Bootstrap>();
-            //Container.BindInterfacesTo<Bootstrap>().AsSingle().NonLazy();
+            Container.BindInterfacesAndSelfTo<SystemBehaviour>().AsSingle().NonLazy();
         }
         
         private void BindGroups()
@@ -50,7 +46,7 @@ namespace Ecs.Installers
 
         private void InstallSystems()
         {
-            //GameEcsSystems.Install(Container);
+            GameEcsSystems.Install(Container);
         }
         
         private void BindEventSystems()
@@ -61,19 +57,6 @@ namespace Ecs.Installers
         private void BindCleanupSystems()
         {
             Container.BindInterfacesTo<GameCleanupSystems>().AsSingle();
-        }
-
-        // protected void BindFeature<TConcrete, TContract>()
-        //     where TConcrete : CustomFeature, TContract, new()
-        //     where TContract : ICustomFeature
-        // {
-        //     var mainFeature = new TConcrete();
-        //     Container.Bind<TContract>().FromInstance(mainFeature);
-        //     Container.Bind<CustomFeature>().FromInstance(mainFeature).WhenInjectedInto<Bootstrap>();
-        // }
-
-        public void Dispose()
-        {
         }
     }
 }
